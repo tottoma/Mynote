@@ -1,0 +1,207 @@
+<!-- ノートの編集画面 -->
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<!-- 終了時刻の入力要求  集中が途切れたら、残りの時間を表示  {% block concent %}{% endblock %}-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+<link rel="stylesheet" id="theme_link" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.3.1/flatly/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1>My note</h1>
+<div class="form">
+  <form method="POST" action="{% url 'updata' note.note_id %}">
+      {% csrf_token %}
+      {{ form.as_p }}
+  <button id="submit_btn" type="button" class="btn btn-dark" value="Submit">保存</button>
+  <button id="keylog_submit_btn" type="button" class="btn btn-dark" value="keylog_btn" style="visibility: hidden;">http</button>
+  </form>
+  <p><span class="show-count">0</span>byte</p>
+</div>
+<div id="concent" class='concent'>
+  <p>状態 <span class="span1"></span></p>
+</div>
+
+<!-- フォーム('#id_content')の文字数カウントを行うjavascriptプログラム -->
+<!-- エンターキーを押した時にsubmitするプログラム -->
+<!-- クッキーを取得するプログラム -->
+<!-- 保存ボタンを押したタイミングで、文字数とnote_idをfetchプログラムで/api/keylogs/へhttp送信 -->
+<!-- 定期的に"#submit_btn"を押して、保存を行うプログラム -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/locale/ja.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.0/underscore-min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js" charset="utf-8"></script>
+<script>
+  $(function(){
+    $('#id_content').keyup(function(){
+      var count = $(this).val().length;
+      $('.show-count').text(count);
+    });
+  });
+  const getCookie = name =>{
+      if (document.cookie && document.cookie !== '') {
+          for (const cookie of document.cookie.split(';')){
+              const [key, value] = cookie.trim().split('=');
+              if(key === name) {
+                  return decodeURIComponent(value);
+              }
+          }
+      }
+  };
+  $('#id_content').keydown(function(e){
+     if( e.which == 8 ){//enter e.which == 13 ||  backspace 押した際
+	       $("#keylog_submit_btn").click();
+         state() // 状態判断
+      }
+  });
+  function state() {
+    let bpm_data = new Array(6);
+    let bpm_time = new Array(6);
+    let key_data = new Array(11);
+    let key_time = new Array(11);
+
+    var times = '120';// 時間幅を指定
+    var param = moment().subtract(times,'hours').format('YYYY-MM-DD HH:mm:ss')
+    //bpm
+    $.getJSON('/api/logs?created_at__gte=' + param)
+        .done(function (source) { // もしもパラメータ(前一時間の範囲)でデータがあれば
+          var user = "{{ user.get_username }}";
+          var count = 5;
+          //前一定時間(times)の間において、該当ユーザの6件の最新bpmデータ
+          for(let i=source.length-1; i>=0; i--){
+            //let bpm_data = new Array(3);
+            const json = JSON.parse( JSON.stringify(source[i]) );
+            bpm_user = json.user_id;
+            if( bpm_user==0 ){// 該当ユーザであれば[0]~[5]の6件のbpmデータ
+              bpm_data[count] = json.bpm;
+              bpm_time[count] = json.measured_at;
+              count--;
+              if( count<0 )break;
+            }
+          }
+          if( count<0 ){
+              //const bpm = parseFloat(bpm_data[2])
+              $.getJSON('/api/keylogs?created_at__gte=' + param)
+                  .done(function (key_source) { // もしもパラメータ(前一時間の範囲)でデータがあれば
+                    var note_id = "{{ note.note_id }}";
+                    var count = 10;
+                    //前一定時間(times)の間において、該当ユーザの最新のデータから検索かける
+                    for(let i = key_source.length-1; i>=0; i--){
+                      const json = JSON.parse( JSON.stringify(key_source[i]) );
+                      if(json.note_id== note_id){// 該当ノートであれば
+                        key_data[count] = json.count;
+                        key_time[count] = json.counted_at;
+                        count--;
+                        if( count<0 )break;
+                      }
+                    }
+                    // key_dataが11件あれば
+                    if(count<0){
+// 最新の心拍数6件および、過去11回の入力データから分析を行う
+////////* 心拍数近6件分の傾きについて正負判定 *///////////////
+                    var sample = [
+                      {x:1, y:bpm_data[0]},{x:2, y:bpm_data[1]},{x:3, y:bpm_data[2]},{x:4, y:bpm_data[3]},{x:5, y:bpm_data[4]},{x:6, y:bpm_data[5]}
+                      ];
+                      // 回帰直線の傾きと切片を求める
+                      var sx = 0;
+                      var sy = 0;
+                      var sxy = 0;
+                      var sxsq = 0;
+                      var bpm_beta;
+                      sample.forEach(function(val) {
+                        sx += val.x;
+                        sy += val.y;
+                        sxy += val.x * val.y;
+                        sxsq += Math.pow(val.x,2);
+                      });
+                      n = sample.length;
+                      bpm_beta  = ((n*sxy) - (sx*sy))/((n*sxsq)-(Math.pow(sx,2))); // bpmについての回帰直線の傾き
+////////* 判定の準備 *///////////////
+                      if( true ){ //bpmが減少傾向の場合 bpm_beta<0
+                        //key_data[0]~key_data[10]:11件の入力数データ
+                        //key_f[0]~[9]: backspaceの入力間隔10件分のデータ
+                        //key_d[0]~[9]: 入力数の差10件分のデータ -1<=key_d
+                        var key_f = new Array(10);
+                        var key_f_rec = new Array(10);
+                        var key_d = new Array(10);
+                        var flag = true;
+                        var count = 0;
+                        for(let i=0; i<10; i++){
+                          var date_1 = new Date(key_time[i]);
+                          var date_2 = new Date(key_time[i+1]);
+                          key_f[i] = date_2.getUTCMinutes()*60+date_2.getUTCSeconds() - date_1.getUTCMinutes()*60+date_1.getUTCSeconds();
+                          //console.log("key_f"+i+": "+JSON.stringify(key_f[i]));
+                          key_f_rec[i] = 1/key_f[i];
+                          key_d[i] = key_data[i+1] - key_data[i];
+
+                          if(key_f[i] < -1)flag=false;
+                          if(key_f_rec[i]<0.02 && key_d[i]<3)count++;
+                        }
+                        console.log("key_f: "+JSON.stringify(key_f));
+                        console.log("key_f_rec: "+JSON.stringify(key_f_rec));
+                        console.log("key_d: "+JSON.stringify(key_d));
+////////* 判定 *///////////////
+                        if(flag){
+                          if(count>=5){
+                            $('.span1').text("集中していない1");
+                          }else $('.span1').text("集中している1");
+                        }else console.log("リロードしてしまった為、正しいデータが取得できなかった");
+                      }else $('.span1').text("集中している2");
+///////* コンソール 表示 *///////
+                      console.log("傾き: "+JSON.stringify(bpm_beta));
+                      console.log(JSON.stringify(bpm_data));// 最新の心拍数6件
+                      //console.log(JSON.stringify(bpm_time))// 最新の心拍数6件
+                      console.log(JSON.stringify(key_data));// 最新の入力数11件
+                      //var toString = Object.prototype.toString;
+                      //console.log("keytime[0]の型: "+toString.call(key_time[0]))
+                      console.log(JSON.stringify(key_time));// 最新の入力数11件
+                    }else console.log("対象keyデータが20件でない");
+             })
+           }else console.log("対象bpmデータが6件でない");
+   });
+}
+  $(document).on("click", "#keylog_submit_btn", function(){
+   var button = $(this);
+   var val_note_id = "{{ note.note_id }}";//$('#id_note_id').val();//undefinedになってた
+   var val_count = $('#id_content').val().length;// フォーム内の文字数
+
+   var data = { "count": val_count,  "note_id": val_note_id};
+   var json_data = "{" +"\"note_id\":"+ val_note_id +"," +"    \"count\": "+ val_count +"" +"}";
+   var json_text = JSON.stringify(data);
+
+   var xmlHttpRequest = new XMLHttpRequest();
+   var url = "http://mynote.pythonanywhere.com/api/keylogs/"; //IP変え忘れ注意
+   var user = "sugairisa";//
+   var pass = "science1220";//
+   var authorizationBasic = user+ ':' + pass;
+   const param  = {
+     method: "POST",
+     headers: {
+       "Accept": "application/json",
+       "Content-Type": "application/json",
+       "X-Requested-With": "XMLHttpRequest",
+       "X-CSRFToken": getCookie("csrftoken"),
+     },
+     body: JSON.stringify(data)
+   };
+   sendServer(url, param);
+ });
+ function sendServer(url, param){
+  fetch(url, param)
+    .then((response)=>{
+      return response.json();
+    })
+    .then((data)=>{
+        console.log('Success:', JSON.stringify(data));
+    })
+    .catch((error)=>{
+      console.log(`[error2] ${error}`);
+    });
+}
+</script>
+{% endblock %}

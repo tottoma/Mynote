@@ -1,0 +1,31 @@
+<!-- 新規ノートの作成-->
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1>Create New note</h1>
+<div class="form">
+  <form method="POST">
+      {% csrf_token %}
+      {{ form.as_p }}
+  <button id="submit_btn" type="submit" class="btn btn-dark" value="Submit">保存</button>
+  </form>
+  <p><span class="show-count">0</span>byte</p>
+</div>
+<!-- 終了時刻の入力要求・updata.htmlへ値渡す -->
+<!-- フォームの文字数カウントを行うjavascriptプログラム #id_note_id -->
+<!-- タイトル・カテゴリが入力済ならノートをデータベースに新規保存し、編集画面へ移る -->
+<script>
+  $(function(){
+    $('#id_content').keyup(function(){
+      var count = $(this).val().length;
+      $('.show-count').text(count);
+    });
+  });
+  $('#id_category').on('change', () => {
+    if( $('#id_title').val().length > 0){
+      $("#submit_btn").click();
+    }
+  });
+</script>
+{% endblock %}

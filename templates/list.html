@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- https://zerofromlight.com/blogs/detail/60/ -->
+  <p>-------------------</p>
+  {% for note in notes %}
+    タイトル：<a href="{% url 'updata' note.note_id %}">{{ note.title }}</a>
+    <p>-------------------</p>
+  {% endfor %}
+{% endblock %}
