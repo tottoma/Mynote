@@ -129,10 +129,12 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 ##STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "static"),
-)
+PROJECT_ROOT = os.path.dirname(BASE_DIR) #<--
+STATICFILES_ROOT = os.path.join(PROJECT_ROOT, 'static')# <--
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')#うわあああああ
+#STATICFILES_DIRS = (
+#    os.path.join(BASE_DIR, "static"),
+#)
 ### 以下、追加 ###
 
 # rest_framework 設定
