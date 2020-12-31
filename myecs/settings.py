@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'note.apps.ApiConfig', # 追加
+    'note.apps.NoteConfig', # 追加
     'bootstrap4',           # django-bootstrap4
     'rest_framework',  #追加
     'django_filters',  #追加
