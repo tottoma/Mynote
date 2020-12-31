@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',  #追加
     'django_filters',  #追加
     'import_export', #追加
-    #'note',             #追加
+    'note',             #追加
 ]
 
 MIDDLEWARE = [
