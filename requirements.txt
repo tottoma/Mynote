@@ -1,4 +1,4 @@
 Django~=2.2.4
 djangorestframework~=3.10.2
-django_filters~=2.4.0
+django-filters~=2.4.0
 django-import-export~=2.1.0
