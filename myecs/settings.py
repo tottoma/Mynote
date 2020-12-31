@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'note.apps.NoteConfig', # 追加
+    ##'note.apps.NoteConfig', # 追加
     'rest_framework',  #追加
     'django_filters',  #追加
     'import_export', #追加
