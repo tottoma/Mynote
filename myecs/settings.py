@@ -87,7 +87,10 @@ DATABASES = {
         'HOST': 'mynote.mysql.pythonanywhere-services.com',# いらない
         #'PORT': '3306',いらない
         #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    },
+     'TEST': {
+          'NAME': 'mynote$test_mysql_ecs',
+     },
 }
 
 
