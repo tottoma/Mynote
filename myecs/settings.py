@@ -140,10 +140,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')#うわあああああ
 # rest_framework 設定
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
 }
 
 # 管理画面のログインを通常ログインとして流用する
