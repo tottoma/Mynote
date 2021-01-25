@@ -1,23 +1,47 @@
 <!-- ノートの編集画面 -->
 {% extends 'base.html' %}
+
+{% block footer %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<input type="time" id="time" name="time" step="60"></input>
+{% endblock %}
+
+{% block time %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1 class="my-3"></h1>
+<div class="balloon" id="balloon" style="visibility: hidden;">
+  <p><span class="span2"></span></p>
+</div>
+{% endblock %}
+
+{% block concent %}
+<div id="concent" class='concent'>
+  <p> <span class="span1" id="span1"></span></p>
+</div>
+<div id="moni" class='moni'>
+</div>
+{% endblock %}
+
 {% block content %}
 {% load static %}
-<!-- 終了時刻の入力要求  集中が途切れたら、残りの時間を表示  {% block concent %}{% endblock %}-->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 <link rel="stylesheet" id="theme_link" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.3.1/flatly/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-<h1>My note</h1>
+<h1></h1>
 <div class="form">
   <form method="POST" action="{% url 'updata' note.note_id %}">
       {% csrf_token %}
-      {{ form.as_p }}
+      <p>title: {{ form.title }}</p>
+      <p>category: {{ form.category}}</p>
+      <p>{{ form.content }}</p>
   <button id="submit_btn" type="submit" class="btn btn-dark" value="Submit">保存</button>
-  <button id="keylog_submit_btn" type="button" class="btn btn-dark" value="keylog_btn" style="visibility: hidden;">http</button>
+  <button id="delete_btn" type="button" class="btn btn-dark" onclick="location.href='{% url 'delete' note.note_id %}'">削除</button>
+  <button id="keylog_enter_btn" type="button" class="btn btn-dark" value="keylog_btn" style="visibility: hidden;">http</button>
+  <button id="keylog_delete_btn" type="button" class="btn btn-dark" value="keylog_btn" style="visibility: hidden;">http</button>
   </form>
   <p><span class="show-count">0</span>byte</p>
-</div>
-<div id="concent" class='concent'>
-  <p>状態 <span class="span1"></span></p>
 </div>
 
 <!-- フォーム('#id_content')の文字数カウントを行うjavascriptプログラム -->
@@ -37,13 +61,27 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.0/underscore-min.js" charset="utf-8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js" charset="utf-8"></script>
 <script>
-  $(function(){
-    $('#id_content').keyup(function(){
-      var count = $(this).val().length;
-      $('.show-count').text(count);
-    });
+$(function(){
+  $('#id_content').keyup(function(e){//keyupはisComposingがtrue(Chrome Firefox	Safari確認済み)
+    var count = $(this).val().length;
+    $('.show-count').text(count);
+
+    if( e.which == 13 || e.key== 'Enter'){//enter e.which == 13 ||  backspace 押した際
+       $("#keylog_enter_btn").click();
+    }
+    if( e.which == 8 || e.key== 'BackSpace'){//enter e.which == 13 ||  backspace 押した際
+        $('.span2').text();
+        $("#keylog_delete_btn").click();
+        if(document.getElementById("balloon").style.visibility != "hidden"){
+          document.getElementById("balloon").style.visibility = "hidden";
+          $('.span2').text("");
+        }
+    }
   });
-  const getCookie = name =>{
+});
+setInterval('state()', 60000);
+setInterval('timeSet()', 300000);
+const getCookie = name =>{
       if (document.cookie && document.cookie !== '') {
           for (const cookie of document.cookie.split(';')){
               const [key, value] = cookie.trim().split('=');
@@ -53,129 +91,201 @@
           }
       }
   };
-  $('#id_content').keydown(function(e){
-     if( e.which == 8 ){//enter e.which == 13 ||  backspace 押した際
-	       $("#keylog_submit_btn").click();
-         state() // 状態判断
-      }
-  });
-  function state() {
-    let bpm_data = new Array(6);
-    let bpm_time = new Array(6);
-    let key_data = new Array(11);
-    let key_time = new Array(11);
+function state() {
+    let bpm_data = new Array(2).fill(0);
+    let bpm_time = new Array(2).fill(0);
+    let key_data = new Array(2).fill(0);
+    let key_time = new Array(2).fill(0);
 
-    var times = '120';// 時間幅を指定
-    var param = moment().subtract(times,'hours').format('YYYY-MM-DD HH:mm:ss')
-    //bpm
+    var times = '3';// 前3分間の時間幅を指定
+    var param = moment().subtract(times,'minutes').format('YYYY-MM-DD HH:mm:ss')
+//心拍数
     $.getJSON('/api/logs?created_at__gte=' + param)
         .done(function (source) { // もしもパラメータ(前一時間の範囲)でデータがあれば
           var user = "{{ user.get_username }}";
-          var count = 5;
-          //前一定時間(times)の間において、該当ユーザの6件の最新bpmデータ
-          for(let i=source.length-1; i>=0; i--){
-            //let bpm_data = new Array(3);
-            const json = JSON.parse( JSON.stringify(source[i]) );
-            bpm_user = json.user_id;
-            if( bpm_user==0 ){// 該当ユーザであれば[0]~[5]の6件のbpmデータ
-              bpm_data[count] = json.bpm;
-              bpm_time[count] = json.measured_at;
-              count--;
-              if( count<0 )break;
+          var count = 1;
+          //前一定時間(times)の間において、該当ユーザの2件の最新bpmデータ
+          if(source.length > 1){
+            for(let i=source.length-1; i>0; i--){
+              //let bpm_data = new Array(3);
+              const json = JSON.parse( JSON.stringify(source[i]) );
+              bpm_user = json.user_id;
+              if( bpm_user == 0 ){// 該当ユーザであれば[0]~[1]の2件のbpmデータ
+                bpm_data[count] = json.bpm;
+                bpm_time[count] = json.measured_at;
+                count--;
+                if( count < 0 )break;
+              }
             }
           }
-          if( count<0 ){
-              //const bpm = parseFloat(bpm_data[2])
-              $.getJSON('/api/keylogs?created_at__gte=' + param)
+            if( count < 0 ){//bpmが2件あれば
+              $.getJSON('/api/keylogs?created_at__gte=' + param)//打鍵数
                   .done(function (key_source) { // もしもパラメータ(前一時間の範囲)でデータがあれば
                     var note_id = "{{ note.note_id }}";
-                    var count = 10;
-                    //前一定時間(times)の間において、該当ユーザの最新のデータから検索かける
-                    for(let i = key_source.length-1; i>=0; i--){
-                      const json = JSON.parse( JSON.stringify(key_source[i]) );
-                      if(json.note_id== note_id){// 該当ノートであれば
-                        key_data[count] = json.count;
-                        key_time[count] = json.counted_at;
-                        count--;
-                        if( count<0 )break;
-                      }
-                    }
-                    // key_dataが11件あれば
-                    if(count<0){
-// 最新の心拍数6件および、過去11回の入力データから分析を行う
-////////* 心拍数近6件分の傾きについて正負判定 *///////////////
-                    var sample = [
-                      {x:1, y:bpm_data[0]},{x:2, y:bpm_data[1]},{x:3, y:bpm_data[2]},{x:4, y:bpm_data[3]},{x:5, y:bpm_data[4]},{x:6, y:bpm_data[5]}
-                      ];
-                      // 回帰直線の傾きと切片を求める
-                      var sx = 0;
-                      var sy = 0;
-                      var sxy = 0;
-                      var sxsq = 0;
-                      var bpm_beta;
-                      sample.forEach(function(val) {
-                        sx += val.x;
-                        sy += val.y;
-                        sxy += val.x * val.y;
-                        sxsq += Math.pow(val.x,2);
-                      });
-                      n = sample.length;
-                      bpm_beta  = ((n*sxy) - (sx*sy))/((n*sxsq)-(Math.pow(sx,2))); // bpmについての回帰直線の傾き
-////////* 判定の準備 *///////////////
-                      if( true ){ //bpmが減少傾向の場合 bpm_beta<0
-                        //key_data[0]~key_data[10]:11件の入力数データ
-                        //key_f[0]~[9]: backspaceの入力間隔10件分のデータ
-                        //key_d[0]~[9]: 入力数の差10件分のデータ -1<=key_d
-                        var key_f = new Array(10);
-                        var key_f_rec = new Array(10);
-                        var key_d = new Array(10);
-                        var flag = true;
-                        var count = 0;
-                        for(let i=0; i<10; i++){
-                          var date_1 = new Date(key_time[i]);
-                          var date_2 = new Date(key_time[i+1]);
-                          key_f[i] = date_2.getUTCMinutes()*60+date_2.getUTCSeconds() - date_1.getUTCMinutes()*60+date_1.getUTCSeconds();
-                          //console.log("key_f"+i+": "+JSON.stringify(key_f[i]));
-                          key_f_rec[i] = 1/key_f[i];
-                          key_d[i] = key_data[i+1] - key_data[i];
+                    var miss = 1;
+                    var tmp = 180;
 
-                          if(key_f[i] < -1)flag=false;
-                          if(key_f_rec[i]<0.02 && key_d[i]<3)count++;
+                    var now = new Date();
+                    if(key_source.length > 1){//前一定時間(times)の間において、該当ユーザ2件の最新bpmデータ
+                      count = 1;
+                      for(let i = key_source.length-1; i>=0 ; i--){//前一定時間(times)の間において、該当ユーザの最新のデータから検索かける
+                        const json = JSON.parse( JSON.stringify(key_source[i]) );
+                        if(json.note_id == note_id){// 該当ノートであれば
+                          if(count == 1 ){
+                            var diff = now.getTime()-new Date(json.counted_at).getTime();//new Date(bpm_time[count]).getTime()
+                            diff = diff/1000; //秒
+                            if(diff*diff < tmp*tmp){//最新の値
+                              tmp = diff;
+                              key_data[count] = json.count;
+                              key_time[1] = json.counted_at;
+                              if(json.key=='8')miss++;
+                            }else count--;
+                          }
+                          if(count == 0){
+                            tmp = 180;
+                            var diff = new Date(json.counted_at).getTime() - now.getTime();
+                            diff = diff/1000 + 60; //秒
+                            if(diff*diff < tmp*tmp){//最新の値
+                              tmp = diff;
+                              key_data[count] = json.count;
+                              key_time[0] = json.counted_at;
+                              if(json.key=='8')miss++;
+                            }else count--;
+                          }
+                          if( count<0 ){
+                            break;
+                          }
                         }
-                        console.log("key_f: "+JSON.stringify(key_f));
-                        console.log("key_f_rec: "+JSON.stringify(key_f_rec));
-                        console.log("key_d: "+JSON.stringify(key_d));
-////////* 判定 *///////////////
-                        if(flag){
-                          if(count>=5){
-                            $('.span1').text("集中していない1");
-                          }else $('.span1').text("集中している1");
-                        }else console.log("リロードしてしまった為、正しいデータが取得できなかった");
-                      }else $('.span1').text("集中している2");
-///////* コンソール 表示 *///////
-                      console.log("傾き: "+JSON.stringify(bpm_beta));
-                      console.log(JSON.stringify(bpm_data));// 最新の心拍数6件
-                      //console.log(JSON.stringify(bpm_time))// 最新の心拍数6件
-                      console.log(JSON.stringify(key_data));// 最新の入力数11件
-                      //var toString = Object.prototype.toString;
-                      //console.log("keytime[0]の型: "+toString.call(key_time[0]))
-                      console.log(JSON.stringify(key_time));// 最新の入力数11件
-                    }else console.log("対象keyデータが20件でない");
+                      }
+
+                    }
+////////* 判定 *///////////
+                    if(count<0){//打鍵数のデータが2件あれば
+                      var bpm_up_rate = bpm_data[1]-bpm_data[0];//心拍の上昇率
+                      var time = new Date(key_time[1]).getTime()-new Date(key_time[0]).getTime();
+                      time = time/60000;
+                      var key_up;
+                      if(time==0)key_up=0;
+                      else key_up = (key_data[1]-key_data[0])/time; //1minあたりの打鍵数
+                      miss = miss/time;
+                      console.log("bpm上昇");
+                      console.log(bpm_up_rate);
+                      if(key_up<0)key_up=0;
+                      //sessionStorage.setItem('CT', 50);
+                      var CT=0;
+                      var CT0;
+                      var KEYUP0;
+                      var key_up_rate;
+                      if(sessionStorage.getItem('NOTE') == null){
+                          CT0 = 50;
+                      }
+                      else if(sessionStorage.getItem('CT')==null || isNaN(sessionStorage.getItem('CT')) ||  parseInt(sessionStorage.getItem('NOTE')) != note_id){
+                        CT0 = parseFloat(50);
+                      }else CT0 = parseFloat(sessionStorage.getItem('CT'));
+
+                      if(sessionStorage.getItem('KEYUP0')==null || isNaN(sessionStorage.getItem('KEYUP0'))){
+                        KEYUP0 = parseFloat(0);
+                      }else KEYUP0 = parseFloat(sessionStorage.getItem('KEYUP0'));
+
+                      if(KEYUP0 < 1){
+                        key_up_rate = 0;
+                      } else {
+                        key_up_rate = (key_up-KEYUP0)/KEYUP0;
+                        if(key_up_rate<0)key_up_rate *= -1;
+                      }//0~10くらい？
+                      console.log("CT0");
+                      console.log(parseFloat(CT0));
+                      CT = parseFloat(CT0) + parseFloat(10*key_up_rate*bpm_up_rate*(miss/(key_up+miss)));
+                        //CT = parseFloat(CT0) + parseFloat(500*key_up_rate*bpm_up_rate*(miss/(key_up+miss)));
+                      if(CT>=100)CT=100;
+                      else if(CT<0)CT=0;
+                      sessionStorage.setItem('CT', CT.toFixed(16));
+                      sessionStorage.setItem('KEYUP0', key_up.toFixed(16));
+                      sessionStorage.setItem('NOTE', note_id);
+                      console.log("打鍵速度の差");
+
+                      console.log(key_up);
+                      console.log(KEYUP0);
+
+                      console.log("打鍵速度の変化　ミス発生率 ct");
+                      console.log(key_up_rate);
+                      console.log((miss/(key_up+miss)));
+                      console.log(10*key_up_rate*bpm_up_rate*(miss/(key_up+miss)));
+                      console.log(CT);
+
+//                      if(CT==CT0){
+//                      }else if(CT < 40){
+//                        $('.span1').text(CT+": 集中していない");
+//                      }else{
+//                        $('.span1').text(CT+": 集中している");
+//                        if(document.getElementById("time").value != ""){
+//                          $('.span2').text("");
+//                        }
+//                      }
+                    }
+/////////////////////////
              })
-           }else console.log("対象bpmデータが6件でない");
+           }
    });
 }
-  $(document).on("click", "#keylog_submit_btn", function(){
+function timeSet(){
+  var input_time = document.getElementById("time").value;
+  const input = input_time.split(':');
+  var date = new Date();
+  var min=0;
+  var h=0;
+  min += Number(input[1])-date.getMinutes();
+  if(min<0){
+    h-=1;
+  }
+  h += Number(input[0])-date.getHours();
+  if(h<0){}
+  else{
+    $('.span2').text("あと"+String(h)+"時間"+String(min)+"分");
+    document.getElementById("balloon").style.visibility ="visible";
+    console.log("あと"+String(h)+"時間"+String(min)+"分");
+    //sessionStorage.setItem('TIME')=="あと"+String(h)+"時間"+String(min)+"分";
+  }
+}
+$(document).on("click", "#keylog_delete_btn", function(){
    var button = $(this);
    var val_note_id = "{{ note.note_id }}";//$('#id_note_id').val();//undefinedになってた
    var val_count = $('#id_content').val().length;// フォーム内の文字数
 
-   var data = { "count": val_count,  "note_id": val_note_id};
-   var json_data = "{" +"\"note_id\":"+ val_note_id +"," +"    \"count\": "+ val_count +"" +"}";
+   var data = { "count": val_count,  "note_id": val_note_id, "key":8};
+   var json_data = "{" +"\"note_id\":"+ val_note_id +"," +"    \"count\": "+ val_count +","+ "    \"key\": "+ 8 +"}";
    var json_text = JSON.stringify(data);
 
    var xmlHttpRequest = new XMLHttpRequest();
-   var url = "https://mynote.pythonanywhere.com/api/keylogs/"; //IP変え忘れ注意
+   var url = "http://172.20.10.3:8000/api/keylogs/";
+  //var url = "https://mynote.pythonanywhere.com/api/keylogs/"; //IP変え忘れ注意
+   var user = "sugairisa";//
+   var pass = "science1220";//
+   var authorizationBasic = user+ ':' + pass;
+   const param  = {
+     method: "POST",
+     headers: {
+       "Accept": "application/json",
+       "Content-Type": "application/json",
+       "X-Requested-With": "XMLHttpRequest",
+       "X-CSRFToken": getCookie("csrftoken"),
+     },
+     body: JSON.stringify(data)
+   };
+   sendServer(url, param);
+ });
+$(document).on("click", "#keylog_enter_btn", function(){
+   var button = $(this);
+   var val_note_id = "{{ note.note_id }}";//$('#id_note_id').val();//undefinedになってた
+   var val_count = $('#id_content').val().length;// フォーム内の文字数
+
+   var data = { "count": val_count,  "note_id": val_note_id, "key":13};
+   var json_data = "{" +"\"note_id\":"+ val_note_id +"," +"    \"count\": "+ val_count +","+ "    \"key\": "+ 13 +"}";
+   var json_text = JSON.stringify(data);
+
+   var xmlHttpRequest = new XMLHttpRequest();
+   var url = "http://172.20.10.3:8000/api/keylogs/";
+  //var url = "https://mynote.pythonanywhere.com/api/keylogs/"; //IP変え忘れ注意
    var user = "sugairisa";//
    var pass = "science1220";//
    var authorizationBasic = user+ ':' + pass;
@@ -197,7 +307,7 @@
       return response.json();
     })
     .then((data)=>{
-        console.log('Success:', JSON.stringify(data));
+        //console.log('Success:', JSON.stringify(data));
     })
     .catch((error)=>{
       console.log(`[error2] ${error}`);
