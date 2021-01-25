@@ -1,7 +1,0 @@
-{% extends 'base.html' %}
-<!-- 使ってない -->
-{% block content %}
-  <p>タイトル：{{ note.title }}</p>
-  <p>内容：{{ note.content }}</p>
-  <button><a class="btn" href="{% url 'updata' note.note_id %}">編集</a></button>
-{% endblock %}

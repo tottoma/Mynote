@@ -6,9 +6,12 @@ from django.contrib.auth import get_user_model
 class Category(models.Model):
     """ノートのカテゴリ"""
     name = models.CharField('タイトル', max_length=255)
+    color = models.TextField('カラー', blank=True, null=True)
 
     def __str__(self):
         return self.name
+    #def get_posts_count(self):
+        #return Note.objects.filter(name=self).count()
 ## 紐付け https://qiita.com/saka___21/items/5233f4bb4a252bcaf44e
 class Note(models.Model):
     note_id = models.AutoField(primary_key=True)
@@ -21,6 +24,7 @@ class Note(models.Model):
 
     def __str__(self):
         return str(self.note_id)
+
     class Meta:
         verbose_name = 'Note'
         verbose_name_plural = 'Note'
@@ -30,6 +34,8 @@ class KeyLog(models.Model):
     note_id = models.ForeignKey(Note, to_field='note_id', on_delete=models.PROTECT, verbose_name='note_id')
     counted_at = models.DateTimeField('カウント時間',auto_now_add=True)
     count = models.IntegerField('文字数')
+    key = models.IntegerField('キーコード', blank=True, null=True)
+
     def __str__(self):
         return str(self.note_id)+','+str(self.count)+','+str(self.counted_at)
     class Meta:

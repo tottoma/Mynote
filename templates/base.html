@@ -4,7 +4,7 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8">
-    <title>MyNote</title>
+    <title>Mynote</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   </head>
 
@@ -18,7 +18,7 @@
       <link rel="stylesheet" id="theme_link" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.3.1/flatly/bootstrap.min.css">
       <div class="fixed-left">
         <nav class="navbar navbar-expand-md navbar-dark bg-primary">
-          <a class ="navbar-brand" href="{% url 'index' %}">mynote</a>
+          <a class ="navbar-brand" href="{% url 'index' %}">Mynote</a>
           <div class="collapse navbar-collapse" id="navbarsExampleDefault">
             <ul class="nav nav-sidebar">
                 <li class="nav-item dropdown">
@@ -41,11 +41,11 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{% url 'admin:logout'}">ログアウト</a>
+                <a class="nav-link" href="{% url 'logout' %}">ログアウト</a>
               </li>
               {% else %}
               <li class="nav-item">
-                <a class="nav-link" href="{% url 'admin:login'}">ログイン</a>
+                <a class="nav-link" href="{% url 'login' %}">ログイン</a>
               </li>
               {% endif %}
             </ul>
@@ -53,24 +53,24 @@
         </nav>
       </div>
     </div>
+
     <div class="container-fluid">
         <div class="row">
+
           <div class="clearfix"></div>
           <div class="col-sm-2 col-md-2 sidebar navbar-light">
-            <ul class="nav nav-sidebar">
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="">
-                    note
-                  </a>
-                  <div class="dropdown-menu">
-                    <a class="dropdown-item" href="{% url 'form' %}">New</a>
-                    <a class="dropdown-item" href="{% url 'list' %}">Open</a>
-                  </div>
-                </li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'mybpm' %}">bpm</a></li>
-            </ul>
+            <div class="time">
+              {% block time %}{% endblock %}
+            </div>
+            <div class='category'>
+              {% block category %}{% endblock %}
+            </div>
+            <div class='footer'>
+            {% block footer %}{% endblock %}
+            </div>
           </div>
-          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+          <div class="col-sm-8 col-sm-offset-2 col-md-8 col-md-offset-2 main">
             <div class='note'>
               {% block content %}{% endblock %}
             </div>
@@ -78,6 +78,13 @@
               {% block chart %}{% endblock %}
             </div>
           </div>
+
+          <div class="col-sm-2 col-md-2 sidebar navbar-light">
+            <div class="left">
+            {% block concent %}{% endblock %}
+            </div>
+          </div>
+
         </div>
     </div>
   </body>

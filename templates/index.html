@@ -1,2 +1,40 @@
 {% extends "base.html" %}
 {% load static %}
+{% block category %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1 class="my-3"></h1>
+<div style="padding: 5px; margin-bottom: 10px; border: 1px dashed #2C3E50; border-radius: 5px;">
+    {% for category in category_list %}
+    <div class="category">
+      <span>{{ category.name }}
+      <font color={{category.color}}>●</font>
+      </span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1 class="my-3"></h1>
+{% for recent in note_list %}
+  {% for note in object_list %}
+    {% if note.note_id == recent %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class='card-content'>
+          <h5 class="card-title">{{ note.title }} ({{ note.user }})</h5>
+          <div class="card-text" id="frame">
+            <span>{{ note.category }}
+            <font color={{note.category.color}}>●</font>
+          </span>
+          <!--span>更新日: {{ note.updated_at }}</span-->
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{% endblock %}

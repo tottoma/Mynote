@@ -11,20 +11,20 @@
               <div class="text-center">
                 <div class="form-check form-check-inline">
                   <label class="form-check-label">
-                    <input type="radio"　class="form-check-input" name="times" value="24" id="term_4" >
-                    1日分
+                    <input type="radio"　class="form-check-input" name="times" value="336" id="term_4" checked>
+                    14日分
                   </label>
                 </div>
                 <div class="form-check form-check-inline">
                   <label class="form-check-label">
-                    <input type="radio" class="form-check-input" name="times" value="12" id ="term_3">
-                    0.5日分
+                    <input type="radio" class="form-check-input" name="times" value="168" id ="term_3">
+                    7日分
                   </label>
               </div>
               <div class="form-check form-check-inline">
                 <label class="form-check-label">
-                  <input type="radio" class="form-check-input" name="times"  value="1" id="term_1" checked >
-                  1時間分
+                  <input type="radio" class="form-check-input" name="times"  value="24" id="term_1">
+                  1日分
                 </label>
             </div>
             </fieldset>
@@ -99,11 +99,12 @@
       function reload() {
           // 指定時間を取得
           var times = $('input[name=times]:checked').val();
+          console.log(times);
           // 1,12,24時間の設定
           var param = moment().subtract(times,'hours').format('YYYY-MM-DD HH:mm:ss')
-
-          $.getJSON('/api/logs?created_at__gte=' + param)
+          $.getJSON('/api/logs?measured_at__gte=' + param)
               .done(function (source) {
+                  console.log(source);
                   let data = new Array(2);
                   data[0] = _.pluck(source, 'measured_at');
                   data[1] = _.pluck(source, 'bpm');

@@ -3,11 +3,13 @@
 {% block content %}
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-<h1>Create New note</h1>
+<h1></h1>
 <div class="form">
   <form method="POST">
       {% csrf_token %}
-      {{ form.as_p }}
+      <p>title: {{ form.title }}</p>
+      <p>category: {{ form.category }}</p>
+      <p>{{ form.content }}</p>
   <button id="submit_btn" type="submit" class="btn btn-dark" value="Submit">保存</button>
   </form>
   <p><span class="show-count">0</span>byte</p>

@@ -20,13 +20,7 @@ from .forms import NoteForm
 from django.http import JsonResponse
 from django.http import QueryDict
 
-# ノート投稿@login_required
-def show(request):
-    note_id = request.GET.get('id')
-    note = Note.objects.get(pk=note_id)
-    return HttpResponse("%s:%s" % (note.title, note.content))
-
-#新規
+#新規    'bootstrap4',           # django-bootstrap4
 def formfunc(request):
     if request.method == 'GET':## 新規作成
         form = NoteForm()
@@ -51,16 +45,23 @@ def updataformfunc(request, note_id):
     else: # GETの場合はデータを表示
         form = NoteForm(instance=note)
     return render(request, 'updata.html', {'form': form, 'note': note})
+# ノート削除
+def deleteformfunc(request, note_id):
+    note = get_object_or_404(Note, note_id=note_id)
+    keylogs = KeyLog.objects.filter(note_id=note_id)
+    keylogs.delete()
+    note.delete()
+    notes = Note.objects.all()
+    return redirect('list')#render(request, 'list.html', {'notes': notes})
 # ノート一覧
 @login_required
 def listfunc(request):
-    notes = Note.objects.all()
+    notes = Note.objects.filter(user=request.user)
+    categories = notes.order_by('category').distinct().values_list("category", flat=True)
+    c = Category.objects.filter()
     ##notes = Note.objects.get(user=request.user)
-    return render(request, 'list.html', {'notes': notes})
-# 詳細(使用していない)
-def detailfunc(request, pk):
-    note = Note.objects.get(note_id=pk)
-    return render(request, 'detail.html', {'note': note})
+    return render(request, 'list.html', {'notes': notes, 'categories':categories, 'c': c})
+
 # 心拍グラフの表示
 def mybpmfunc(request):
     ##bpms = HeartLog.objects.get(user=get_user_model())
@@ -105,6 +106,9 @@ class KeyLogViewSet(viewsets.ModelViewSet):
 class MainView(LoginRequiredMixin, TemplateView):
     template_name = 'index.html'
 
-class NoteList(ListView):
-    template_name = 'list.html'
-    model = Note
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_list'] = Note.objects.all()
+        context['category_list'] = Category.objects.all()
+        context['note_list'] = KeyLog.objects.order_by('note_id').distinct().values_list("note_id", flat=True).reverse()[:5]
+        return context

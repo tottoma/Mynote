@@ -34,6 +34,7 @@ urlpatterns = [
     path('', include('note.urls')),
 
     url(r'^admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('api/', include(router.urls)),
 ]
 # ログイン画面のタイトルを変更

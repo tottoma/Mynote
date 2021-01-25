@@ -32,7 +32,7 @@ class KeyLogResource(resources.ModelResource):
 
 @admin.register(KeyLog)
 class KeyLogAdmin(ImportExportModelAdmin):
-    list_display = ('note_id', 'counted_at', 'count')
+    list_display = ('note_id', 'counted_at', 'count', 'key')
     search_fields = ['note_id']
     # django-import-exportsの設定
     resource_class = KeyLogResource

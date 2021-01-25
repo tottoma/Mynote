@@ -1,12 +1,12 @@
 from django.urls import path
-from .views import listfunc, formfunc, detailfunc, mybpmfunc, updataformfunc
-from note.views import NoteList
+from .views import listfunc, formfunc, mybpmfunc, updataformfunc, deleteformfunc
 
 urlpatterns = [
-    path('list/', listfunc, name='list'),
+    path('note/list/', listfunc, name='list'),
     ##path('', listfunc, name='list'),
-    path('form/', formfunc, name='form'),
-    path('updata/<int:note_id>', updataformfunc, name='updata'),
+    path('note/', formfunc, name='form'),
+    path('note/<int:note_id>/updata/', updataformfunc, name='updata'),
+    path('note/<int:note_id>/delete/', deleteformfunc, name='delete'),
     ##path('detail/<int:pk>', detailfunc, name='detail'),
     path('mybpm/', mybpmfunc, name='mybpm'),
 ]

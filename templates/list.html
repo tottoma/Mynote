@@ -1,9 +1,46 @@
 {% extends 'base.html' %}
 {% block content %}
+{% load static %}
 <!-- https://zerofromlight.com/blogs/detail/60/ -->
-  <p>-------------------</p>
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<div class='list'>
+  <h1 class="my-3"></h1>
   {% for note in notes %}
-    タイトル：<a href="{% url 'updata' note.note_id %}">{{ note.title }}</a>
-    <p>-------------------</p>
+  {% if note.user.get_username == user.get_username %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">
+        <a href="{% url 'updata' note.note_id %}">{{ note.title }}</a>
+      </h5>
+      <div class="card-text" id="frame">
+        <span class="left">{{ note.category }}
+        <font color={{note.category.color}}>●</font></span>
+      <span class="right">更新日: {{ note.updated_at }}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   {% endfor %}
+</div>
+{% endblock %}
+
+{% block category %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<h1 class="my-3"></h1>
+
+<div style="padding: 10px; margin-bottom: 10px; border: 1px dashed #2C3E50; border-radius: 5px;">
+  <a>{{ notes|length }} notes</a>
+  {% for category in categories %}
+    {% for c in c %}
+    {% if c.id == category %}
+    <div class="category">
+      <span>{{ c.name }}
+        <font color={{c.color}}>●</font>
+      </span>
+    </div>
+    {% endif %}
+    {% endfor %}
+  {% endfor %}
+</div>
+
 {% endblock %}
