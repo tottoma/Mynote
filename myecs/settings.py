@@ -81,12 +81,16 @@ WSGI_APPLICATION = 'myecs.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # 変更
-        'NAME': 'mysql_ecs', # プロジェクトで使用するデータベース名
-        'USER': 'root', # パソコンにインストールしたMySQLのユーザー名
-        'PASSWORD': 'root', # 同上。そのパスワード
-        #'HOST': '127.0.0.1',いらない
-        #'PORT': '3306',いらない
-        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'mynote$mysql_ecs', # プロジェクトで使用するデータベース名
+        'USER': 'mynote', # パソコンにインストールしたMySQLのユーザー名
+        'PASSWORD': 'root2020', # 同上。そのパスワード
+        'HOST': 'mynote.mysql.pythonanywhere-services.com',# いらない
+        #'NAME': 'mysql_ecs', # プロジェクトで使用するデータベース名
+        #'USER': 'root', # パソコンにインストールしたMySQLのユーザー名
+        #'PASSWORD': 'root', # 同上。そのパスワード
+        ##'HOST': '127.0.0.1',いらない
+        ##'PORT': '3306',いらない
+        ##'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
